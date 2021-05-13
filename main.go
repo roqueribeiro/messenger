@@ -8,9 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/olahol/melody.v1"
 )
 
@@ -102,12 +100,5 @@ func main() {
 		})
 	})
 
-	// r.Run()
-
-	o := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("messenger-golang.herokuapp.com"),
-	}
-
-	log.Fatal(autotls.RunWithManager(r, &o))
+	r.Run()
 }
