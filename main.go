@@ -26,6 +26,7 @@ func main() {
 	m := melody.New()
 
 	r.Static("/messenger", "./public")
+	r.Static("/images/icons", "./public/images/icons")
 	r.Static("/public/upload", "./public/upload")
 
 	r.MaxMultipartMemory = 8 << 20

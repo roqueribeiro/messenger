@@ -1,9 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+    <link rel="manifest" href="manifest.json" />
+    <!-- ios support -->
+    <link rel="apple-touch-icon" href="images/icons/icon-16x16.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-24x24.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-32x32.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-64x64.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-256x256.png" />
+    <link rel="apple-touch-icon" href="images/icons/icon-512x512.png" />
+    <link rel="shortcut icon" href="images/icons/favicon.ico" />
+    <meta name="apple-mobile-web-app-status-bar" content="#333333" />
+    <meta name="theme-color" content="#333333" />
 
     <title>Messenger</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
@@ -130,8 +143,8 @@
                 </v-col>
             </v-navigation-drawer>
 
-            <v-navigation-drawer v-model="emoticonsDrawer" app floating width="30%" temporary bottom style="bottom:52px;"
-                class="elevation-0" hide-overlay>
+            <v-navigation-drawer v-model="emoticonsDrawer" app floating width="30%" temporary bottom
+                style="bottom:52px;" class="elevation-0" hide-overlay>
                 <v-btn :key="i" v-for="(emoticon, i) in emoticons" text fab x-small class="ma-2"
                     @click="addEmoticon(emoticon.character)">
                     <b style="font-size: x-large;">{{ emoticon.character }}</b>
@@ -267,7 +280,6 @@
         </v-app>
     </div>
     <script type="text/javascript">
-
         const hostname = window.location.hostname;
         const port = window.location.port;
 
@@ -276,7 +288,9 @@
         new Vue({
             el: '#app',
             vuetify: new Vuetify({
-                theme: { dark: true },
+                theme: {
+                    dark: true
+                },
             }),
             data: () => ({
                 userId: uuidv4(),
@@ -319,7 +333,7 @@
                 items: [{
                     name: 'Public',
                     children: [],
-                },],
+                }, ],
             }),
             updated() {
                 this.$nextTick(() => this.scrollToEnd());
@@ -342,26 +356,28 @@
                     this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
                 },
                 async listEmoticons() {
-                    return await fetch('https://emoji-api.com/categories/smileys-emotion?access_key=84720b097feb1b0a28f7ac6c191d73ba82179575', {
-                        'method': 'GET',
-                        'Content-Type': 'application/json',
-                    })
+                    return await fetch(
+                            'https://emoji-api.com/categories/smileys-emotion?access_key=84720b097feb1b0a28f7ac6c191d73ba82179575', {
+                                'method': 'GET',
+                                'Content-Type': 'application/json',
+                            })
                         .then(response => response.json())
                         .then(data => this.emoticons = data);
                 },
                 async listGiphys() {
-                    return await fetch('https://api.giphy.com/v1/gifs/trending?api_key=8VLK6f9k0Rb28RddCke5387GNzvdaNWm', {
-                        'method': 'GET',
-                        'Content-Type': 'application/json',
-                    })
+                    return await fetch(
+                            'https://api.giphy.com/v1/gifs/trending?api_key=8VLK6f9k0Rb28RddCke5387GNzvdaNWm', {
+                                'method': 'GET',
+                                'Content-Type': 'application/json',
+                            })
                         .then(response => response.json())
                         .then(data => this.gifs = data.data);
                 },
                 async listFiles() {
                     return await fetch('/files', {
-                        'method': 'GET',
-                        'Content-Type': 'application/json',
-                    })
+                            'method': 'GET',
+                            'Content-Type': 'application/json',
+                        })
                         .then(response => response.json())
                         .then(data => this.items[0].children = data);
                 },
