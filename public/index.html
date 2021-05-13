@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+
+    <title>Messenger</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css">
+
+    <style>
+        /* width */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <v-app>
+
+            <v-navigation-drawer v-model="uploadDrawer" app floating width="50%" height="1800px" temporary bottom>
+                <v-col class="fill-height pa-0">
+                    <v-card flat tile class="d-flex flex-column fill-height">
+                        <v-card-title>
+                            <strong>Files</strong>&nbsp;<small>({{ items[0].children.length }} file(s))</small>
+                            <v-spacer></v-spacer>
+                            <v-card-actions>
+                                <v-btn depressed elevation="0" :disabled="tree.length == 0" @click="sendSelectedFiles">
+                                    {{ tree.length }} selected
+                                    <v-icon right>
+                                        mdi-send
+                                    </v-icon>
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card-title>
+                        <v-divider></v-divider>
+                        <v-card-text class="flex-grow-1 overflow-y-auto">
+                            <v-text-field v-model="searchFiles" label="" prepend-inner-icon="mdi-magnify" outlined flat
+                                hide-details dense clearable></v-text-field>
+                            <v-treeview v-model="tree" :items="items" :load-children="listFiles" :search="searchFiles"
+                                :filter="filterFiles" dense activatable selectable selection-type="leaf" return-object
+                                item-key="name" open-on-click>
+                                <template v-slot:prepend="{ item, open }">
+                                    <v-icon v-if="!item.file">
+                                        {{ open ? 'mdi-folder-open' : 'mdi-folder' }}
+                                    </v-icon>
+                                    <v-icon v-else>
+                                        {{ files[item.file] }}
+                                    </v-icon>
+                                </template>
+                            </v-treeview>
+                        </v-card-text>
+                        <v-card-text class="flex-shrink-1">
+                            <v-form>
+                                <v-scroll-y-transition hide-on-leave>
+                                    <v-row v-if="uploadProgress > 0 && uploadProgress <= 100">
+                                        <v-col cols="12">
+                                            <v-row>
+                                                <v-progress-linear v-model="uploadProgress" height="25">
+                                                    <strong>{{ uploadProgress }}%</strong>
+                                                </v-progress-linear>
+                                            </v-row>
+                                            <v-row align="center" justify="space-around">
+                                                <v-btn text class="mt-5" color="error" @click="cancelUpload">
+                                                    Cancel Upload
+                                                </v-btn>
+                                            </v-row>
+                                        </v-col>
+                                    </v-row>
+                                </v-scroll-y-transition>
+                                <v-scroll-x-transition>
+                                    <v-row v-if="uploadFinish">
+                                        <v-col>
+                                            <v-alert dismissible dense color="blue" border="left" elevation="1"
+                                                colored-border icon="mdi-upload">
+                                                {{ uploadFinishResponse }}
+                                            </v-alert>
+                                        </v-col>
+                                    </v-row>
+                                </v-scroll-x-transition>
+                                <v-scroll-y-transition hide-on-leave>
+                                    <v-row v-if="uploadProgress == 0">
+                                        <v-col cols="12">
+                                            <v-file-input v-model="selectedFiles" dense color="deep-purple accent-4"
+                                                counter multiple placeholder="Upload your files"
+                                                prepend-icon="mdi-paperclip" append-outer-icon="mdi-upload" outlined
+                                                :show-size="1000" @click:append-outer="uploadFiles">
+                                                <template v-slot:selection="{ index, text }">
+                                                    <v-chip v-if="index < 2" color="deep-purple accent-4" dark label
+                                                        small>
+                                                        {{ text }}
+                                                    </v-chip>
+                                                    <span v-else-if="index === 2"
+                                                        class="overline grey--text text--darken-3 mx-2">
+                                                        +{{ selectedFiles.length - 2 }}
+                                                        File(s)
+                                                    </span>
+                                                </template>
+                                            </v-file-input>
+                                        </v-col>
+                                    </v-row>
+                                </v-scroll-y-transition>
+                            </v-form>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-navigation-drawer>
+
+            <v-navigation-drawer v-model="emoticonsDrawer" app floating width="30%" temporary bottom style="bottom:52px;"
+                class="elevation-0" hide-overlay>
+                <v-btn :key="i" v-for="(emoticon, i) in emoticons" text fab x-small class="ma-2"
+                    @click="addEmoticon(emoticon.character)">
+                    <b style="font-size: x-large;">{{ emoticon.character }}</b>
+                </v-btn>
+            </v-navigation-drawer>
+
+            <v-navigation-drawer v-model="gifsDrawer" app floating width="30%" temporary bottom>
+                <v-row>
+                    <v-col v-for="(gif, i) in gifs" :key="i" class="d-flex child-flex pa-0" cols="4">
+                        <v-img :src="gif.images.original.url" :lazy-src="gif.images.preview_gif.url" aspect-ratio="1"
+                            class="grey lighten-2"
+                            @click="sendGif(gif.images.original.url, gif.images.preview_gif.url)">
+                            <template v-slot:placeholder>
+                                <v-row class="fill-height ma-0" align="center" justify="center">
+                                    <v-progress-circular indeterminate color="grey lighten-5">
+                                    </v-progress-circular>
+                                </v-row>
+                            </template>
+                        </v-img>
+                    </v-col>
+                </v-row>
+            </v-navigation-drawer>
+
+            <v-app-bar app fixed flat>
+                <v-toolbar-title>
+                    <v-text-field v-model="userName" hide-details prepend-icon="mdi-account" single-line maxlength="10"
+                        placeholder="Type your nickname...">
+                    </v-text-field>
+                </v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn class="mx-2" text fab elevation="0" small @click="emoticonsDrawer = !emoticonsDrawer">
+                    <v-icon dark>
+                        mdi-emoticon
+                    </v-icon>
+                </v-btn>
+                <v-btn class="mx-2" text fab elevation="0" small @click="gifsDrawer = !gifsDrawer">
+                    <v-icon dark>
+                        mdi-gif
+                    </v-icon>
+                </v-btn>
+                <v-tooltip v-if="!$vuetify.theme.dark" bottom>
+                    <template v-slot:activator="{ on }">
+                        <v-btn v-on="on" color="info" small fab text @click="darkMode">
+                            <v-icon class="mr-1">mdi-moon-waxing-crescent</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>Dark Mode On</span>
+                </v-tooltip>
+                <v-tooltip v-else bottom>
+                    <template v-slot:activator="{ on }">
+                        <v-btn v-on="on" color="info" small fab text @click="darkMode">
+                            <v-icon color="yellow">mdi-white-balance-sunny</v-icon>
+                        </v-btn>
+                    </template>
+                    <span>Dark Mode Off</span>
+                </v-tooltip>
+            </v-app-bar>
+
+            <v-main>
+                <v-container fluid>
+                    <v-scroll-x-transition group tag="div">
+                        <template v-for="(msg, i) in messages">
+                            <div :key="i" :class="{ 'd-flex flex-row-reverse': (userId == msg.user_id) }">
+                                <div v-if="msg.gif" class="mb-2">
+                                    <p class="subtitle-2 font-weight-light mb-2">
+                                        {{ msg.user_name }}:
+                                    </p>
+                                    <v-img :src="msg.gif" :lazy-src="msg.thumb" min-width="300" max-width="300">
+                                        <template v-slot:placeholder>
+                                            <v-row class="fill-height ma-0" align="center" justify="center">
+                                                <v-progress-circular indeterminate color="grey lighten-5">
+                                                </v-progress-circular>
+                                            </v-row>
+                                        </template>
+                                    </v-img>
+                                    <p class="mt-2" style="font-size: 0.5rem;">
+                                        {{ this.moment(msg.created_at).format('HH:mm:ss') }}
+                                    </p>
+                                </div>
+                                <v-card v-else-if="msg.files" :color="(userId == msg.user_id) ? 'primary' : ''"
+                                    class="mb-2" max-width="100%">
+                                    <v-card-title>
+                                        <v-icon left>mdi-account-circle</v-icon>
+                                        <span class="subtitle-2 font-weight-light">
+                                            {{ msg.user_name }}:
+                                        </span>
+                                    </v-card-title>
+                                    <v-card-text class="pa-0">
+                                        <v-chip v-for="(file, j) in msg.files" class="ma-2"
+                                            @click="openFilePath(file.path)">
+                                            <v-icon left>
+                                                {{ files[file.file] }}
+                                            </v-icon>
+                                            {{ file.name }}
+                                        </v-chip>
+                                    </v-card-text>
+                                    <v-card-actions>
+                                        <span style="font-size: 0.5rem;">
+                                            {{ this.moment(msg.created_at).format('HH:mm:ss') }}
+                                        </span>
+                                    </v-card-actions>
+                                </v-card>
+                                <v-chip v-else :color="(userId == msg.user_id) ? 'primary' : ''"
+                                    style="height:auto;white-space: normal;" class="py-2 px-4 mb-2">
+                                    <v-avatar left>
+                                        <v-icon>mdi-account-circle</v-icon>
+                                    </v-avatar>
+                                    {{ msg.user_name }}: {{ msg.content }}
+                                    <sub class="ml-2" style="font-size: 0.5rem;">
+                                        {{ this.moment(msg.created_at).format('HH:mm:ss') }}
+                                    </sub>
+                                </v-chip>
+                            </div>
+                        </template>
+                    </v-scroll-x-transition>
+                </v-container>
+            </v-main>
+
+            <v-footer app inset>
+                <v-row justify="center" no-gutters>
+                    <v-col>
+                        <v-form @submit="sendMessage" v-on:submit.prevent>
+                            <v-text-field v-model="message" outlined dense hide-details single-line maxlength="200"
+                                prepend-icon="mdi-paperclip" append-outer-icon="mdi-send" clear-icon="mdi-close-circle"
+                                clearable label="Message" type="text" @click:prepend="uploadDrawer = !uploadDrawer"
+                                @click:append-outer="sendMessage">
+                            </v-text-field>
+                        </v-form>
+                    </v-col>
+                </v-row>
+            </v-footer>
+
+        </v-app>
+    </div>
+    <script type="text/javascript">
+
+        const hostname = window.location.hostname;
+        const port = window.location.port;
+
+        const ws = new WebSocket(`ws://${hostname}:${port}/ws`);
+        const request = new XMLHttpRequest();
+        new Vue({
+            el: '#app',
+            vuetify: new Vuetify({
+                theme: { dark: true },
+            }),
+            data: () => ({
+                userId: uuidv4(),
+                userName: "",
+                gifsDrawer: false,
+                gifs: [],
+                emoticonsDrawer: false,
+                emoticons: [],
+                message: "",
+                messages: [],
+                messagesScrollHeight: 0,
+                uploadDrawer: false,
+                uploadFinish: false,
+                uploadFinishResponse: "",
+                uploadProgress: 0,
+                selectedFiles: [],
+                searchFiles: null,
+                files: {
+                    'html': 'mdi-language-html5',
+                    'js': 'mdi-nodejs',
+                    'json': 'mdi-code-json',
+                    'md': 'mdi-language-markdown',
+                    'pdf': 'mdi-file-pdf',
+                    'png': 'mdi-file-image',
+                    'jpg': 'mdi-file-image',
+                    'jpeg': 'mdi-file-image',
+                    'mp3': 'mdi-file-music',
+                    'flac': 'mdi-file-music',
+                    'mp4': 'mdi-video-vintage',
+                    'mpeg': 'mdi-video-vintage',
+                    'mkv': 'mdi-video-vintage',
+                    'txt': 'mdi-file-document-outline',
+                    'xls': 'mdi-file-excel',
+                    'xlsx': 'mdi-file-excel',
+                    'zip': 'mdi-zip-box',
+                    'rar': 'mdi-zip-box',
+                    '7z': 'mdi-zip-box',
+                },
+                tree: [],
+                items: [{
+                    name: 'Public',
+                    children: [],
+                },],
+            }),
+            updated() {
+                this.$nextTick(() => this.scrollToEnd());
+            },
+            mounted() {
+                var self = this;
+                ws.onmessage = (response) => {
+                    this.messages.push(JSON.parse(response.data));
+                };
+                this.listEmoticons();
+                this.listGiphys();
+            },
+            computed: {
+                filterFiles() {
+                    return (item, search, textKey) => item[textKey].indexOf(this.searchFiles) > -1
+                },
+            },
+            methods: {
+                darkMode() {
+                    this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
+                },
+                async listEmoticons() {
+                    return await fetch('https://emoji-api.com/categories/smileys-emotion?access_key=84720b097feb1b0a28f7ac6c191d73ba82179575', {
+                        'method': 'GET',
+                        'Content-Type': 'application/json',
+                    })
+                        .then(response => response.json())
+                        .then(data => this.emoticons = data);
+                },
+                async listGiphys() {
+                    return await fetch('https://api.giphy.com/v1/gifs/trending?api_key=8VLK6f9k0Rb28RddCke5387GNzvdaNWm', {
+                        'method': 'GET',
+                        'Content-Type': 'application/json',
+                    })
+                        .then(response => response.json())
+                        .then(data => this.gifs = data.data);
+                },
+                async listFiles() {
+                    return await fetch('/files', {
+                        'method': 'GET',
+                        'Content-Type': 'application/json',
+                    })
+                        .then(response => response.json())
+                        .then(data => this.items[0].children = data);
+                },
+                addEmoticon(emoticon) {
+                    this.message += emoticon;
+                },
+                sendMessage() {
+                    if (!this.message) return false;
+                    const data = {
+                        user_id: this.userId,
+                        user_name: this.userName || 'Somebody',
+                        content: this.message,
+                        created_at: moment()
+                    }
+                    ws.send(JSON.stringify(data));
+                    this.message = "";
+                },
+                sendGif(gif, thumb) {
+                    this.gifsDrawer = !this.gifsDrawer;
+                    const data = {
+                        user_id: this.userId,
+                        user_name: this.userName || 'Somebody',
+                        gif: gif,
+                        thumb: thumb,
+                        created_at: moment()
+                    }
+                    ws.send(JSON.stringify(data));
+                },
+                uploadFiles() {
+                    if (this.selectedFiles.length == 0) return false;
+                    var self = this;
+                    const formData = new FormData();
+
+                    self.uploadFinish = false;
+                    self.uploadFinishResponse = "";
+
+                    Object.entries(this.selectedFiles).forEach(([key, file]) => {
+                        formData.append('file[]', file);
+                    });
+
+                    request.open('POST', '/upload');
+                    request.upload.addEventListener('progress', function (e) {
+                        let percentage = (e.loaded / e.total) * 100;
+                        self.uploadProgress = Math.ceil(percentage);
+                    });
+                    request.addEventListener('load', function (e) {
+                        let jsonResponse = JSON.parse(request.response);
+
+                        self.uploadFinish = true;
+                        self.uploadFinishResponse = jsonResponse.message;
+                        self.uploadProgress = 0;
+                        self.selectedFiles = [];
+                        self.listFiles();
+                    });
+                    request.send(formData);
+                },
+                sendSelectedFiles() {
+                    this.uploadDrawer = !this.uploadDrawer;
+                    const data = {
+                        user_id: this.userId,
+                        user_name: this.userName || 'Somebody',
+                        files: this.tree,
+                        created_at: moment()
+                    }
+                    this.tree = [];
+                    ws.send(JSON.stringify(data));
+                },
+                openFilePath(path) {
+                    window.open(`/${path}`);
+                },
+                cancelUpload() {
+                    request.abort();
+                    this.uploadProgress = 0;
+                    this.selectedFiles = [];
+                },
+                scrollToEnd() {
+                    var scrollHeight = document.body.scrollHeight || document.documentElement.scrollHeight;
+                    if (this.messagesScrollHeight !== scrollHeight) {
+                        this.messagesScrollHeight = scrollHeight;
+                        window.scrollTo(0, scrollHeight);
+                    }
+                }
+            },
+        })
+    </script>
+</body>
