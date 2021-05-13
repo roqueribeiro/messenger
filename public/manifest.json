@@ -3,7 +3,7 @@
     "name": "Messenger",
     "short_name": "Messenger",
     "description": "Real Time Chat",
-    "start_url": "./messenger",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#333333",
     "theme_color": "#333333",
