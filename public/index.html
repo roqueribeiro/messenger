@@ -141,7 +141,7 @@
             <v-navigation-drawer v-model="gifsDrawer" app floating width="30%" temporary bottom>
                 <v-row>
                     <v-col v-for="(gif, i) in gifs" :key="i" class="d-flex child-flex pa-0" cols="4">
-                        <v-img :src="gif.images.original.url" :lazy-src="gif.images.preview_gif.url" aspect-ratio="1"
+                        <v-img :src="gif.images.downsized.url" :lazy-src="gif.images.preview_gif.url" aspect-ratio="1"
                             class="grey lighten-2"
                             @click="sendGif(gif.images.original.url, gif.images.preview_gif.url)">
                             <template v-slot:placeholder>
