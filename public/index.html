@@ -266,7 +266,7 @@
             <v-footer app inset>
                 <v-row justify="center" no-gutters>
                     <v-col>
-                        <v-form @submit="sendMessage" v-on:submit.prevent>
+                        <v-form class="ma-1" @submit="sendMessage" v-on:submit.prevent>
                             <v-text-field v-model="message" outlined dense hide-details single-line maxlength="200"
                                 prepend-icon="mdi-paperclip" append-outer-icon="mdi-send" clear-icon="mdi-close-circle"
                                 clearable label="Message" type="text" @click:prepend="uploadDrawer = !uploadDrawer"
